@@ -1,0 +1,11 @@
+Model Information:
+* title:	3D Curtain
+* source:	https://sketchfab.com/3d-models/3d-curtain-9cd3f5fc0a8a4da7a390066b29a1d2d8
+* author:	NadanyB (https://sketchfab.com/nadanyb)
+
+Model License:
+* license type:	CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
+* requirements:	Author must be credited. Commercial use is allowed.
+
+If you use this 3D model in your project be sure to copy paste this credit wherever you share it:
+This work is based on "3D Curtain" (https://sketchfab.com/3d-models/3d-curtain-9cd3f5fc0a8a4da7a390066b29a1d2d8) by NadanyB (https://sketchfab.com/nadanyb) licensed under CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
