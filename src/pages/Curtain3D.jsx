@@ -1371,7 +1371,7 @@ export default function Curtain3D() {
   const [isLoading, setIsLoading] = useState(true);
   const [foldProgress, setFoldProgress] = useState(0);
   const [foldDirection, setFoldDirection] = useState("up");
-  const [curtainPosition, setCurtainPosition] = useState([0, 0, 0]);
+  const [curtainPosition, setCurtainPosition] = useState([0, -0.050, 0]);
   const [showControls, setShowControls] = useState(true);
   const [patternType, setPatternType] = useState("none");
   const [patternIntensity, setPatternIntensity] = useState(0.5);

@@ -302,19 +302,19 @@ export default function CapturePage() {
                 {/* Bottom Line */}
                 <div
                   ref={bottomLineRef}
-                  className="absolute top-[66%] left-[20%] w-[60%] h-[2px] bg-white transform -translate-y-1/2 origin-center"
+                  className="absolute top-[64%] left-[20%] w-[60%] h-[2px] bg-white transform -translate-y-1/2 origin-center"
                 />
 
                 {/* Left Line */}
                 <div
                   ref={leftLineRef}
-                  className="absolute top-[18%] left-[20%] w-[2px] h-[48%] bg-white origin-center"
+                  className="absolute top-[18%] left-[21.2%] w-[2px] h-[48%] bg-white origin-center"
                 />
 
                 {/* Right Line */}
                 <div
                   ref={rightLineRef}
-                  className="absolute top-[18%] right-[20%] w-[2px] h-[48%] bg-white origin-center"
+                  className="absolute top-[18%] right-[22%] w-[2px] h-[48%] bg-white origin-center"
                 />
 
                 {/* Corner Sparkles */}

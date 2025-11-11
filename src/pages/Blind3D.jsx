@@ -17,7 +17,7 @@ function BlindModel({
   blindOpenAmount = 0,
   selectedTexture = "none",
 }) {
-  const gltf = useGLTF("/Blindes_window.glb");
+  const gltf = useGLTF("/blindesss.glb");
   const groupRef = useRef();
   const [textures, setTextures] = useState({});
   const [texturesLoaded, setTexturesLoaded] = useState(false);
@@ -77,7 +77,7 @@ function BlindModel({
     const size = box.getSize(new THREE.Vector3());
     const center = box.getCenter(new THREE.Vector3());
     const maxDim = Math.max(size.x, size.y, size.z);
-    const scale = maxDim > 0 ? 0.8 / maxDim : 1;
+    const scale = maxDim > 0 ? 0.78 / maxDim : 1;
     cloned.position.set(-center.x, -center.y, -center.z);
     return { clonedScene: cloned, scale };
   }, [gltf.scene]);
@@ -148,7 +148,7 @@ function BlindModel({
     </group>
   );
 }
-useGLTF.preload("/Blindes_window.glb");
+useGLTF.preload("/blindesss.glb");
 
 /* ------------------- Stable Orbit Controls ------------------- */
 function StableOrbitControls(props) {
@@ -279,7 +279,7 @@ export default function Blind3D() {
                     <ambientLight intensity={-0.1} />
                     <directionalLight position={[20, 5, 25]} intensity={1} />
                     <Suspense fallback={null}>
-                      <BlindModel useOriginalColors={true} position={[0, 0.2, 0]} />
+                      <BlindModel useOriginalColors={true} position={[0, 0.22   , 0]} />
                       <Environment preset="city" />
                     </Suspense>
                     <StableOrbitControls
