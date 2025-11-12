@@ -243,7 +243,7 @@ export default function Blind3D() {
             <div
               className="relative w-full rounded-xl overflow-hidden transition-all duration-500"
               style={{
-                height: isClosed ? "232px" : "442px",
+                height: isClosed ? "221px" : "412px",
               }}
             >
               {/* Open / Close Buttons */}
