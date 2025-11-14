@@ -46,32 +46,8 @@ export function ColorControls({
         </span>
       </h3>
       
-      {/* Original Colors Toggle */}
-      <div className="mb-4">
-        <motion.button
-          className={cn(
-            "w-full p-3 rounded-xl font-semibold text-white transition-all duration-300 transform shadow-lg flex items-center justify-center gap-2",
-            useOriginalColors 
-              ? "bg-gradient-to-r from-green-600 to-green-700 ring-2 ring-green-400" 
-              : "bg-gradient-to-r from-gray-700 to-gray-800 hover:from-gray-600 hover:to-gray-700"
-          )}
-          onClick={() => onOriginalColorsChange(!useOriginalColors)}
-          whileHover={{ scale: 1.02 }}
-          whileTap={{ scale: 0.95 }}
-        >
-          <Circle className={cn("w-4 h-4", useOriginalColors ? "fill-white" : "")} />
-          Use Original 3D Model Colors
-        </motion.button>
-        {useOriginalColors && (
-          <motion.p 
-            className="text-green-300 text-xs mt-2 text-center"
-            initial={{ opacity: 0, y: -5 }}
-            animate={{ opacity: 1, y: 0 }}
-          >
-            Original model colors enabled
-          </motion.p>
-        )}
-      </div>
+
+    
 
       {!useOriginalColors && (
         <>
