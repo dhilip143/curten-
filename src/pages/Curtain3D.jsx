@@ -2,6 +2,7 @@ import React, { Suspense, useEffect, useState, useMemo, useRef } from "react";
 import * as THREE from "three";
 import { Canvas } from "@react-three/fiber";
 import { OrbitControls, useGLTF, Environment } from "@react-three/drei";
+import { HexColorPicker } from "react-colorful";
 import { useLocation, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -92,14 +93,7 @@ const AVAILABLE_TEXTURES = [
     preview: "bg-gradient-to-br from-gray-400 to-gray-600",
     type: "fabric"
   },
-  {
-    id: "linen",
-    name: "Linen",
-    description: "Natural linen texture",
-    diffuse: "/textures/polar_fleece_anisotropy_strength_4k.png",
-    preview: "bg-gradient-to-br from-gray-400 to-gray-600 text-gray-800",
-    type: "fabric"
-  }
+ 
 ];
 
 /* ------------------- Pattern Textures ------------------- */
@@ -155,13 +149,7 @@ function createPatternTexture(patternType, color = "#ffffff") {
       }
       break;
 
-    case 'stripes':
-      context.fillStyle = primaryColor;
-      const stripeWidth = 16;
-      for (let i = 0; i < size; i += stripeWidth * 2) {
-        context.fillRect(i, 0, stripeWidth, size);
-      }
-      break;
+  
 
     case 'polka':
       context.fillStyle = primaryColor;
@@ -221,7 +209,7 @@ function CurtainModel({
   patternIntensity = 0.5,
   selectedTexture = "none"
 }) {
-  const gltf = useGLTF("/3d_curtain/scene.gltf");
+  const gltf = useGLTF("/Curtainsss.glb");
   const groupRef = useRef();
   const meshRef = useRef();
   const [textures, setTextures] = useState({});
@@ -435,7 +423,7 @@ function CurtainModel({
 }
 
 // Preload curtain model
-useGLTF.preload("/3d_curtain/scene.gltf");
+useGLTF.preload("/Curtainsss.glb");
 
 /* ------------------- Mobile Control Components ------------------- */
 
@@ -498,7 +486,7 @@ function MobileTabNav({ activeTab, onTabChange }) {
 
   return (
     <motion.div
-      className="fixed top-18 left-0 right-0 z-50 bg-white/95 backdrop-blur-lg border-t border-gray-300 p-3"
+      className="fixed top-18 left-0 right-0 z-50  backdrop-blur-lg border-t border-gray-300 p-3"
       initial={{ y: 100 }}
       animate={{ y: 0 }}
       transition={{ type: "spring", damping: 20, delay: 0.1 }}
@@ -536,9 +524,11 @@ function MobileColorPalette({
   onCurtainColorChange,
   selectedRodColor,
   onRodColorChange,
-  useOriginalColors,
-  onOriginalColorsChange
+  useOriginalColors
 }) {
+  const [showCurtainPicker, setShowCurtainPicker] = useState(false);
+  const [showRodPicker, setShowRodPicker] = useState(false);
+
   const curtainColors = [
     { name: "Gray", value: "#6b7280", class: "bg-gray-600" },
     { name: "Red", value: "#dc2626", class: "bg-red-600" },
@@ -547,7 +537,7 @@ function MobileColorPalette({
     { name: "Purple", value: "#9333ea", class: "bg-purple-600" },
     { name: "Pink", value: "#db2777", class: "bg-pink-600" },
     { name: "Yellow", value: "#ca8a04", class: "bg-yellow-600" },
-    { name: "Teal", value: "#0d9488", class: "bg-teal-600" },
+    { name: "Custom", value: "custom", class: "bg-white border border-gray-400" }
   ];
 
   const rodColors = [
@@ -556,12 +546,222 @@ function MobileColorPalette({
     { name: "Silver", value: "#c0c0c0", class: "bg-gray-400" },
     { name: "Bronze", value: "#cd7f32", class: "bg-orange-700" },
     { name: "Black", value: "#1f2937", class: "bg-gray-800" },
-    { name: "Chrome", value: "#e5e7eb", class: "bg-gray-300 text-gray-800" },
+    { name: "Chrome", value: "#e5e7eb", class: "bg-gray-300" },
     { name: "Copper", value: "#b87333", class: "bg-orange-800" },
-    { name: "Rose Gold", value: "#b76e79", class: "bg-rose-400" },
-
-
+    { name: "Custom", value: "custom", class: "bg-white border border-gray-400" }
   ];
+
+  // Circular Color Wheel Picker Component
+  const ColorWheelPicker = ({ color, onChange, onClose }) => {
+    const [hue, setHue] = useState(0);
+    const [saturation, setSaturation] = useState(100);
+    const [lightness, setLightness] = useState(50);
+    const wheelRef = useRef(null);
+    const [isDragging, setIsDragging] = useState(false);
+
+    // Convert hex to HSL
+    const hexToHsl = (hex) => {
+      const r = parseInt(hex.slice(1, 3), 16) / 255;
+      const g = parseInt(hex.slice(3, 5), 16) / 255;
+      const b = parseInt(hex.slice(5, 7), 16) / 255;
+      
+      const max = Math.max(r, g, b);
+      const min = Math.min(r, g, b);
+      let h, s, l = (max + min) / 2;
+
+      if (max === min) {
+        h = s = 0;
+      } else {
+        const d = max - min;
+        s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+        
+        switch (max) {
+          case r: h = (g - b) / d + (g < b ? 6 : 0); break;
+          case g: h = (b - r) / d + 2; break;
+          case b: h = (r - g) / d + 4; break;
+        }
+        h /= 6;
+      }
+
+      return {
+        h: Math.round(h * 360),
+        s: Math.round(s * 100),
+        l: Math.round(l * 100)
+      };
+    };
+
+    // Convert HSL to Hex
+    const hslToHex = (h, s, l) => {
+      h /= 360;
+      s /= 100;
+      l /= 100;
+      
+      let r, g, b;
+      
+      if (s === 0) {
+        r = g = b = l;
+      } else {
+        const hue2rgb = (p, q, t) => {
+          if (t < 0) t += 1;
+          if (t > 1) t -= 1;
+          if (t < 1/6) return p + (q - p) * 6 * t;
+          if (t < 1/2) return q;
+          if (t < 2/3) return p + (q - p) * (2/3 - t) * 6;
+          return p;
+        };
+        
+        const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
+        const p = 2 * l - q;
+        
+        r = hue2rgb(p, q, h + 1/3);
+        g = hue2rgb(p, q, h);
+        b = hue2rgb(p, q, h - 1/3);
+      }
+      
+      const toHex = (x) => {
+        const hex = Math.round(x * 255).toString(16);
+        return hex.length === 1 ? '0' + hex : hex;
+      };
+      
+      return `#${toHex(r)}${toHex(g)}${toHex(b)}`;
+    };
+
+    // Initialize from current color
+    useEffect(() => {
+      if (color && color !== '#ffffff') {
+        const hsl = hexToHsl(color);
+        setHue(hsl.h);
+        setSaturation(hsl.s);
+        setLightness(hsl.l);
+      }
+    }, [color]);
+
+    const handleWheelClick = (e) => {
+      if (!wheelRef.current) return;
+      
+      const rect = wheelRef.current.getBoundingClientRect();
+      const centerX = rect.width / 2;
+      const centerY = rect.height / 2;
+      const x = e.clientX - rect.left - centerX;
+      const y = e.clientY - rect.top - centerY;
+      
+      // Calculate angle (0° at top, increasing clockwise)
+      let angle = Math.atan2(y, x) * (180 / Math.PI) + 90;
+      if (angle < 0) angle += 360;
+      
+      // Calculate distance from center (for saturation)
+      const distance = Math.min(Math.sqrt(x*x + y*y), centerX - 10);
+      const sat = Math.min(100, Math.round((distance / (centerX - 10)) * 100));
+      
+      const newHue = Math.round(angle);
+      const newSaturation = sat;
+      
+      setHue(newHue);
+      setSaturation(newSaturation);
+      const newColor = hslToHex(newHue, newSaturation, lightness);
+      onChange(newColor);
+    };
+
+    const handleLightnessChange = (e) => {
+      const newLightness = parseInt(e.target.value);
+      setLightness(newLightness);
+      const newColor = hslToHex(hue, saturation, newLightness);
+      onChange(newColor);
+    };
+
+    const handleMouseDown = (e) => {
+      setIsDragging(true);
+      handleWheelClick(e);
+    };
+
+    const handleMouseMove = (e) => {
+      if (isDragging) {
+        handleWheelClick(e);
+      }
+    };
+
+    const handleMouseUp = () => {
+      setIsDragging(false);
+    };
+
+    // Add event listeners for dragging
+    useEffect(() => {
+      if (isDragging) {
+        window.addEventListener('mousemove', handleMouseMove);
+        window.addEventListener('mouseup', handleMouseUp);
+        return () => {
+          window.removeEventListener('mousemove', handleMouseMove);
+          window.removeEventListener('mouseup', handleMouseUp);
+        };
+      }
+    }, [isDragging]);
+
+    // Create color wheel gradient
+    const wheelStyle = {
+      background: `conic-gradient(
+        from 0deg,
+        #ff0000 0deg,
+        #ffff00 60deg,
+        #00ff00 120deg,
+        #00ffff 180deg,
+        #0000ff 240deg,
+        #ff00ff 300deg,
+        #ff0000 360deg
+      )`,
+    };
+
+    const currentColor = hslToHex(hue, saturation, lightness);
+
+    return (
+      <div className="w-full max-w-xs mx-auto p-4">
+        <div className="relative mb-6">
+          {/* Color Wheel */}
+          <div 
+            ref={wheelRef}
+            className="relative w-64 h-64 rounded-full mx-auto cursor-pointer overflow-hidden border-4 border-white shadow-lg"
+            style={wheelStyle}
+            onMouseDown={handleMouseDown}
+          >
+            {/* White center for saturation control */}
+            <div className="absolute inset-8 rounded-full bg-white"></div>
+            
+            {/* Selection indicator */}
+            <div 
+              className="absolute w-6 h-6 rounded-full border-2 border-white shadow-lg pointer-events-none"
+              style={{
+                left: '50%',
+                top: '50%',
+                transform: `translate(-50%, -50%) translate(${
+                  Math.cos((hue - 90) * (Math.PI / 180)) * (saturation / 100) * 112
+                }px, ${
+                  Math.sin((hue - 90) * (Math.PI / 180)) * (saturation / 100) * 112
+                }px)`,
+                backgroundColor: currentColor
+              }}
+            />
+            
+            {/* Degree markers */}
+          
+        
+          </div>
+        </div>
+
+       
+
+        {/* Selected Color Preview */}
+        <div className="flex items-center justify-center space-x-4 mb-6">
+          <div className="flex flex-col items-center">
+           
+          
+          </div>
+          <div className="flex flex-col items-center">
+           
+            
+          </div>
+        </div>
+      </div>
+    );
+  };
 
   return (
     <motion.div
@@ -570,12 +770,10 @@ function MobileColorPalette({
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3 }}
     >
-
-
       {!useOriginalColors && (
         <>
-          {/* Fabric Colors */}
-          <div className="mb-4">
+          {/* Curtain Colors */}
+          <div className="mb-4 mt-2">
             <h4 className="text-gray-800 font-semibold mb-3 text-sm flex items-center gap-2">
               <div className="w-4 h-4 bg-gray-600 rounded-full"></div>
               Curtain Fabric
@@ -584,32 +782,22 @@ function MobileColorPalette({
             <div className="grid grid-cols-8 gap-2">
               {curtainColors.map((color) => (
                 <motion.button
-                  key={color.value}
+                  key={color.name}
                   className={cn(
-                    "relative w-10 h-10 rounded-full transition-all duration-300 transform hover:scale-105 active:scale-95 shadow-lg",
+                    "relative w-10 h-10 rounded-full transition-all duration-300 shadow-md",
                     color.class,
-                    selectedCurtainColor === color.value && "ring-2 ring-gray-700 ring-opacity-60 shadow-xl"
+                    selectedCurtainColor === color.value &&
+                      "ring-2 ring-gray-700 shadow-lg"
                   )}
-                  onClick={() => onCurtainColorChange(color.value)}
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                >
-                  {/* Selected Indicator */}
-                  {selectedCurtainColor === color.value && (
-                    <motion.div
-                      className="absolute -top-1 -right-1 w-4 h-4 bg-white rounded-full flex items-center justify-center"
-                      initial={{ scale: 0 }}
-                      animate={{ scale: 1 }}
-                      transition={{ type: "spring", stiffness: 500, damping: 15 }}
-                    >
-                      <div className="w-2 h-2 bg-gray-600 rounded-full"></div>
-                    </motion.div>
-                  )}
-                </motion.button>
+                  onClick={() =>
+                    color.value === "custom"
+                      ? setShowCurtainPicker(true)
+                      : onCurtainColorChange(color.value)
+                  }
+                />
               ))}
             </div>
           </div>
-
 
           {/* Rod Colors */}
           <div>
@@ -621,37 +809,71 @@ function MobileColorPalette({
             <div className="grid grid-cols-8 gap-2">
               {rodColors.map((color) => (
                 <motion.button
-                  key={color.value}
+                  key={color.name}
                   className={cn(
-                    "relative w-10 h-10 rounded-full transition-all duration-300 transform hover:scale-105 active:scale-95 shadow-lg",
+                    "relative w-10 h-10 rounded-full transition-all duration-300 shadow-md",
                     color.class,
-                    selectedRodColor === color.value && "ring-2 ring-gray-700 ring-opacity-60 shadow-xl"
+                    selectedRodColor === color.value &&
+                      "ring-2 ring-gray-700 shadow-lg"
                   )}
-                  onClick={() => onRodColorChange(color.value)}
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                >
-                  {/* Selected Indicator */}
-                  {selectedRodColor === color.value && (
-                    <motion.div
-                      className="absolute -top-1 -right-1 w-4 h-4 bg-white rounded-full flex items-center justify-center"
-                      initial={{ scale: 0 }}
-                      animate={{ scale: 1 }}
-                      transition={{ type: "spring", stiffness: 500, damping: 15 }}
-                    >
-                      <div className="w-2 h-2 bg-gray-600 rounded-full"></div>
-                    </motion.div>
-                  )}
-                </motion.button>
+                  onClick={() =>
+                    color.value === "custom"
+                      ? setShowRodPicker(true)
+                      : onRodColorChange(color.value)
+                  }
+                />
               ))}
             </div>
           </div>
         </>
       )}
+
+      {/* CURTAIN COLOR POPUP */}
+      {showCurtainPicker && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white p-6 rounded-2xl shadow-xl w-full max-w-sm mx-4 flex flex-col items-center">
+            <h3 className="font-semibold mb-4 text-lg">Pick Curtain Color</h3>
+            
+            <ColorWheelPicker
+              color={selectedCurtainColor}
+              onChange={onCurtainColorChange}
+              onClose={() => setShowCurtainPicker(false)}
+            />
+
+            <button
+              onClick={() => setShowCurtainPicker(false)}
+              className="mt-4 bg-gray-900 text-white px-6 py-3 rounded-lg font-medium w-full"
+            >
+              Done
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* ROD COLOR POPUP */}
+      {showRodPicker && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white p-6 rounded-2xl shadow-xl w-full max-w-sm mx-4 flex flex-col items-center">
+            <h3 className="font-semibold mb-4 text-lg">Pick Rod Color</h3>
+            
+            <ColorWheelPicker
+              color={selectedRodColor}
+              onChange={onRodColorChange}
+              onClose={() => setShowRodPicker(false)}
+            />
+
+            <button
+              onClick={() => setShowRodPicker(false)}
+              className="mt-4 bg-gray-900 text-white px-6 py-3 rounded-lg font-medium w-full"
+            >
+              Done
+            </button>
+          </div>
+        </div>
+      )}
     </motion.div>
   );
 }
-
 /* ------------------- Texture Controls Component ------------------- */
 function MobileTextureControls({
   selectedTexture,
@@ -670,25 +892,36 @@ function MobileTextureControls({
 
   return (
     <motion.div
-      className="space-y-4 p-4 bg-white rounded-2xl shadow-lg mx-4 mt-2 mb-24"
+      className="space-y-4 p-3 bg-white  rounded-2xl shadow-lg mx-4 mt-2 mb-0"
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3 }}
     >
-      <h3 className="text-lg font-bold text-gray-800 mb-3 flex items-center gap-2">
-        <Image className="w-5 h-5 text-gray-600" />
-        Fabric Textures
-      </h3>
+      <h3 className="text-lg font-bold text-gray-800 mb-3 flex items-center justify-between">
+  <div className="flex items-center gap-2">
+    <Image className="w-5 h-5 text-gray-600" />
+    Fabric Textures
+  </div>
+
+  {/* Reset Button */}
+  <button
+    onClick={() => onTextureChange("none")}
+    className="text-xs font-semibold px-2 py-1 rounded-lg bg-gray-200 hover:bg-gray-300 text-gray-700 transition"
+  >
+    Reset
+  </button>
+</h3>
+
 
       <div className="space-y-4">
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-2 gap-2">
           {AVAILABLE_TEXTURES.map((texture) => (
             <motion.button
               key={texture.id}
               onClick={() => handleTextureClick(texture.id)}
               disabled={loadingTexture === texture.id}
               className={cn(
-                "relative p-4 rounded-xl transition-all duration-300 transform text-left min-h-[100px] flex flex-col justify-end border-2",
+                "relative p-2 rounded-xl transition-all duration-300 transform text-left min-h-[10px] flex flex-col justify-end border-2",
                 selectedTexture === texture.id
                   ? "border-gray-600 bg-gray-100 shadow-lg scale-105 text-gray-800"
                   : "border-gray-300 bg-white hover:bg-gray-50 hover:scale-102 text-gray-700",
@@ -750,12 +983,7 @@ function MobilePatternControls({
       description: "Modern geometric shapes",
       preview: "bg-gradient-to-br from-gray-500 to-gray-700 relative overflow-hidden"
     },
-    {
-      id: "stripes",
-      name: "Stripes",
-      description: "Classic striped pattern",
-      preview: "bg-gradient-to-br from-gray-500 to-gray-700 relative overflow-hidden"
-    },
+   
     {
       id: "polka",
       name: "Polka Dots",
@@ -802,10 +1030,21 @@ function MobilePatternControls({
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3 }}
     >
-      <h3 className="text-lg font-bold text-gray-800 mb-3 flex items-center gap-2">
-        <Zap className="w-5 h-5 text-gray-600" />
-        Pattern Design
-      </h3>
+      <h3 className="text-lg font-bold text-gray-800 mb-3 flex items-center justify-between">
+  <div className="flex items-center gap-2">
+    <Zap className="w-5 h-5 text-gray-600" />
+    Pattern Design
+  </div>
+
+  {/* Reset Button */}
+  <button
+    onClick={() => onPatternChange("none")}
+    className="text-xs font-semibold px-2 py-1 rounded-lg bg-gray-200 hover:bg-gray-300 text-gray-700 transition"
+  >
+    Reset
+  </button>
+</h3>
+
 
       <div className="space-y-4">
         <div className="grid grid-cols-2 gap-3">
@@ -816,7 +1055,7 @@ function MobilePatternControls({
                 key={pattern.id}
                 onClick={() => onPatternChange(pattern.id)}
                 className={cn(
-                  "relative p-4 rounded-xl transition-all duration-300 transform text-left min-h-[100px] flex flex-col justify-end border-2",
+                  "relative p-2 rounded-xl transition-all duration-300 transform text-left min-h-[14px] flex flex-col justify-end border-2",
                   patternType === pattern.id
                     ? "border-gray-600 bg-gray-100 shadow-lg scale-105 text-gray-800"
                     : "border-gray-300 bg-white hover:bg-gray-50 hover:scale-102 text-gray-700"
@@ -846,35 +1085,7 @@ function MobilePatternControls({
           })}
         </div>
 
-        {patternType !== "none" && (
-          <div className="space-y-3">
-            <div className="flex justify-between items-center">
-              <span className="text-gray-700 text-sm font-medium">Pattern Intensity</span>
-              <span className="text-gray-600 text-sm font-bold">
-                {Math.round(patternIntensity * 100)}%
-              </span>
-            </div>
-            <div className="relative">
-              <input
-                type="range"
-                min="0"
-                max="1"
-                step="0.1"
-                value={patternIntensity}
-                onChange={(e) => onPatternIntensityChange(parseFloat(e.target.value))}
-                className="w-full h-3 bg-gray-300 rounded-full appearance-none cursor-pointer slider"
-              />
-              <div
-                className="absolute top-0 left-0 h-3 bg-gradient-to-r from-gray-600 to-gray-800 rounded-full pointer-events-none"
-                style={{ width: `${patternIntensity * 100}%` }}
-              ></div>
-            </div>
-            <div className="flex justify-between text-xs text-gray-500">
-              <span>Subtle</span>
-              <span>Bold</span>
-            </div>
-          </div>
-        )}
+        
       </div>
     </motion.div>
   );
@@ -895,94 +1106,85 @@ function MobilePositionControls({ position, onPositionChange, onReset }) {
     onReset([0, 0, 0]);
   };
 
-  return (
-    <motion.div
-      className="space-y-4 p-4 bg-white rounded-2xl shadow-lg mx-4 mt-2 mb-24"
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.3 }}
+ return (
+  <motion.div
+  className="space-y-4 p-4 bg-white rounded-2xl shadow-lg mx-4 mt-2 mb-24"
+  initial={{ opacity: 0, y: 20 }}
+  animate={{ opacity: 1, y: 0 }}
+  transition={{ duration: 0.3 }}
+>
+  <div className="flex justify-between items-center mb-3">
+    <h3 className="text-lg font-bold text-gray-800">
+      Position
+    </h3>
+    <motion.button
+      onClick={handleReset}
+      className="bg-gray-200 text-gray-800 py-1 px-2 rounded-full font-semibold hover:bg-gray-300 transition-all duration-300 flex items-center justify-center gap-2 text-xs "
+      whileHover={{ scale: 1.02 }}
+      whileTap={{ scale: 0.98 }}
     >
-      <h3 className="text-lg font-bold text-gray-800 mb-3 flex items-center gap-2">
-        <Move className="w-5 h-5 text-gray-600" />
-        Position Controls
-      </h3>
+      Reset 
+    </motion.button>
+  </div>
 
-      <div className="space-y-4">
-        {/* Position Display */}
-        <div className="bg-gray-100 rounded-xl p-4 text-center">
-          <div className="grid grid-cols-2 gap-4 text-sm">
-            <div>
-              <p className="text-gray-600">X Position</p>
-              <p className="text-gray-800 font-bold text-lg">{position[0].toFixed(1)}</p>
-            </div>
-            <div>
-              <p className="text-gray-600">Y Position</p>
-              <p className="text-gray-800 font-bold text-lg">{position[1].toFixed(1)}</p>
-            </div>
+  <div className="space-y-4">
+    {/* Directional Controls Layout */}
+    <div className="flex flex-col items-center ">
+      {/* Up Button - Centered */}
+      <motion.button
+  onClick={() => handleMove('y', 1)}
+  className="w-16 h-16 bg-gradient-to-r from-gray-700 to-black text-white rounded-full font-semibold shadow-lg flex items-center justify-center text-base"
+  whileHover={{ scale: 1.02 }}
+  whileTap={{ scale: 0.98 }}
+>
+  <ArrowUp className="w-6 h-6" />
+</motion.button>
+
+      {/* Left/Middle/Right Row */}
+      <div className="flex justify-center items-center gap-3 w-full">
+        {/* Left Button */}
+         <motion.button
+    onClick={() => handleMove('x', -1)}
+    className="w-16 h-16 bg-gradient-to-r from-gray-600 to-gray-800 text-white rounded-full font-semibold shadow-lg flex items-center justify-center text-base"
+    whileHover={{ scale: 1.02 }}
+    whileTap={{ scale: 0.98 }}
+  >
+    <ArrowLeftIcon className="w-6 h-6" />
+  </motion.button>
+
+        {/* Middle Position Display (Static Box) */}
+        <div className="w-18 h-16 flex items-center justify-center">
+          <div className="text-center">
+            <div className="text-xs text-gray-500 font-medium"></div>
+            <div className="text-lg font-bold text-gray-800"></div>
           </div>
         </div>
 
-        {/* Directional Controls */}
-        <div className="space-y-3">
-          {/* Up Button */}
+        {/* Right Button */}
           <motion.button
-            onClick={() => handleMove('y', 1)}
-            className="w-full bg-gradient-to-r from-gray-700 to-black text-white py-4 rounded-xl font-semibold shadow-lg flex items-center justify-center gap-2 text-base"
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-          >
-            <ArrowUp className="w-5 h-5" />
-            Move Up
-          </motion.button>
-
-          {/* Left/Right Row */}
-          <div className="grid grid-cols-2 gap-3">
-            <motion.button
-              onClick={() => handleMove('x', -1)}
-              className="bg-gradient-to-r from-gray-600 to-gray-800 text-white py-4 rounded-xl font-semibold shadow-lg flex items-center justify-center gap-2 text-base"
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-            >
-              <ArrowLeftIcon className="w-5 h-5" />
-              Move Left
-            </motion.button>
-
-            <motion.button
-              onClick={() => handleMove('x', 1)}
-              className="bg-gradient-to-r from-gray-600 to-gray-800 text-white py-4 rounded-xl font-semibold shadow-lg flex items-center justify-center gap-2 text-base"
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-            >
-              <ArrowRight className="w-5 h-5" />
-              Move Right
-            </motion.button>
-          </div>
-
-          {/* Down Button */}
-          <motion.button
-            onClick={() => handleMove('y', -1)}
-            className="w-full bg-gradient-to-r from-gray-700 to-black text-white py-4 rounded-xl font-semibold shadow-lg flex items-center justify-center gap-2 text-base"
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-          >
-            <ChevronDown className="w-5 h-5" />
-            Move Down
-          </motion.button>
-        </div>
-
-        {/* Reset Button */}
-        <motion.button
-          onClick={handleReset}
-          className="w-full bg-gray-200 text-gray-800 py-4 rounded-xl font-semibold hover:bg-gray-300 transition-all duration-300 flex items-center justify-center gap-2 text-base"
-          whileHover={{ scale: 1.02 }}
-          whileTap={{ scale: 0.98 }}
-        >
-          <RotateCcw className="w-4 h-4" />
-          Reset Position
-        </motion.button>
+    onClick={() => handleMove('x', 1)}
+    className="w-16 h-16 bg-gradient-to-r from-gray-600 to-gray-800 text-white rounded-full font-semibold shadow-lg flex items-center justify-center text-base"
+    whileHover={{ scale: 1.02 }}
+    whileTap={{ scale: 0.98 }}
+  >
+    <ArrowRight className="w-6 h-6" />
+  </motion.button>
       </div>
-    </motion.div>
-  );
+
+      {/* Down Button - Centered */}
+    <motion.button
+  onClick={() => handleMove('y', -1)}
+  className="w-16 h-16 bg-gradient-to-r from-gray-700 to-black text-white rounded-full font-semibold shadow-lg flex items-center justify-center text-base"
+  whileHover={{ scale: 1.02 }}
+  whileTap={{ scale: 0.98 }}
+>
+  <ChevronDown className="w-6 h-6" />
+</motion.button>
+    </div>
+  </div>
+</motion.div>
+
+);
 }
 
 /* ------------------- Fold Controls Component ------------------- */
@@ -1018,137 +1220,96 @@ function MobileFoldControls({
 
   return (
     <motion.div
-      className="space-y-4 p-4 bg-white rounded-2xl shadow-lg mx-4 mt-2 mb-24"
+      className="space-y-2 p-4 bg-white rounded-3xl shadow-lg mx-4 mt-2 mb-2 border border-gray-200"
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3 }}
     >
-      <h3 className="text-lg font-bold text-gray-800 mb-3 flex items-center gap-2">
-        <ChevronUp className="w-5 h-5 text-gray-600" />
-        Fold Controls
-      </h3>
+      {/* Header + Reset */}
+      <div className="flex items-center justify-between">
+        <h3 className="text-xl font-bold text-gray-900">Fold Control</h3>
 
-      <div className="space-y-4">
-        {/* Fold Direction Selection */}
-        <div className="space-y-3">
-          <h4 className="text-gray-800 font-semibold text-base">Fold Direction</h4>
-          <div className="grid grid-cols-3 gap-3">
-            <motion.button
-              onClick={() => onFoldDirectionChange("up")}
-              className={cn(
-                "p-4 rounded-xl font-medium transition-all duration-300 flex flex-col items-center gap-2 text-sm",
-                foldDirection === "up"
-                  ? "bg-gradient-to-r from-gray-700 to-black text-white ring-2 ring-gray-500"
-                  : "bg-gray-200 text-gray-800 hover:bg-gray-300"
-              )}
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-            >
-              <ChevronUp className="w-5 h-5" />
-              Up/Down
-            </motion.button>
-
-            <motion.button
-              onClick={() => onFoldDirectionChange("left")}
-              className={cn(
-                "p-4 rounded-xl font-medium transition-all duration-300 flex flex-col items-center gap-2 text-sm",
-                foldDirection === "left"
-                  ? "bg-gradient-to-r from-gray-700 to-black text-white ring-2 ring-gray-500"
-                  : "bg-gray-200 text-gray-800 hover:bg-gray-300"
-              )}
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-            >
-              <ChevronLeft className="w-5 h-5" />
-              Left
-            </motion.button>
-
-            <motion.button
-              onClick={() => onFoldDirectionChange("right")}
-              className={cn(
-                "p-4 rounded-xl font-medium transition-all duration-300 flex flex-col items-center gap-2 text-sm",
-                foldDirection === "right"
-                  ? "bg-gradient-to-r from-gray-700 to-black text-white ring-2 ring-gray-500"
-                  : "bg-gray-200 text-gray-800 hover:bg-gray-300"
-              )}
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-            >
-              <ChevronRight className="w-5 h-5" />
-              Right
-            </motion.button>
-          </div>
-        </div>
-
-        {/* Progress Bar */}
-        <div className="space-y-3">
-          <div className="flex justify-between text-sm">
-            <span className="text-gray-600">0%</span>
-            <span className="text-gray-800 font-semibold">{Math.round(foldProgress * 100)}%</span>
-            <span className="text-gray-600">100%</span>
-          </div>
-          <div className="bg-gray-300 rounded-full h-4 overflow-hidden">
-            <motion.div
-              className="h-full rounded-full bg-gradient-to-r from-gray-600 to-gray-800"
-              initial={{ width: `${foldProgress * 100}%` }}
-              animate={{ width: `${foldProgress * 100}%` }}
-              transition={{ duration: 0.3 }}
-            />
-          </div>
-        </div>
-
-        {/* Status Display */}
-        <div className="text-center bg-gray-100 rounded-xl p-4">
-          <span className="text-gray-800 font-bold text-base">
-            {getFoldStatusText()}
-          </span>
-        </div>
-
-        {/* Control Buttons */}
-        <div className="grid grid-cols-2 gap-3">
-          <motion.button
-            onClick={handleFoldDecrease}
-            disabled={foldProgress === 0}
-            className={cn(
-              "bg-gradient-to-r from-gray-600 to-gray-800 text-white py-4 rounded-xl font-semibold shadow-lg transition-all duration-300 flex items-center justify-center gap-2 text-base",
-              foldProgress === 0 ? "opacity-50 cursor-not-allowed" : "hover:shadow-gray-500/25"
-            )}
-            whileHover={foldProgress > 0 ? { scale: 1.02 } : {}}
-            whileTap={foldProgress > 0 ? { scale: 0.98 } : {}}
-          >
-            <ChevronDown className="w-5 h-5" />
-            Less Fold
-          </motion.button>
-
-          <motion.button
-            onClick={handleFoldIncrease}
-            disabled={foldProgress === 1}
-            className={cn(
-              "bg-gradient-to-r from-gray-600 to-gray-800 text-white py-4 rounded-xl font-semibold shadow-lg transition-all duration-300 flex items-center justify-center gap-2 text-base",
-              foldProgress === 1 ? "opacity-50 cursor-not-allowed" : "hover:shadow-gray-500/25"
-            )}
-            whileHover={foldProgress < 1 ? { scale: 1.02 } : {}}
-            whileTap={foldProgress < 1 ? { scale: 0.98 } : {}}
-          >
-            <ChevronUp className="w-5 h-5" />
-            More Fold
-          </motion.button>
-        </div>
-
-        {/* Reset Button */}
-        <motion.button
+        <button
           onClick={handleResetFold}
-          disabled={foldProgress === 0}
           className={cn(
-            "w-full bg-gray-200 text-gray-800 py-4 rounded-xl font-semibold transition-all duration-300 flex items-center justify-center gap-2 text-base",
-            foldProgress === 0 ? "opacity-50 cursor-not-allowed" : "hover:bg-gray-300"
+            "px-2 bg-gray-200 rounded-xl border border-gray-400 text-gray-800 text-sm font-semibold transition-all",
+            foldProgress === 0 ? "opacity-50 cursor-not-allowed" : "hover:bg-gray-100"
           )}
-          whileHover={foldProgress > 0 ? { scale: 1.02 } : {}}
-          whileTap={foldProgress > 0 ? { scale: 0.98 } : {}}
         >
-          <RotateCcw className="w-4 h-4" />
-          Reset Fold
+          Reset
+        </button>
+      </div>
+
+      {/* Section Title */}
+      <h4 className="text-gray-900 font-semibold text-base">Fold Direction</h4>
+
+      {/* 4-Card Grid */}
+      <div className="grid grid-cols-2 gap-2 mt-2">
+
+        {/* DOWN */}
+        <motion.button
+          onClick={() => onFoldDirectionChange("down")}
+          className={cn(
+            " rounded-2xl transition-all duration-300 flex flex-col items-center gap-2 shadow-md text-base",
+            foldDirection === "down"
+              ? "bg-gray-900 text-white ring-2 ring-gray-500 shadow-lg"
+              : "bg-white text-gray-800 border border-gray-200 hover:bg-gray-100"
+          )}
+          whileHover={{ scale: 1.03 }}
+          whileTap={{ scale: 0.95 }}
+        >
+          <ChevronDown className="w-6 h-6" />
+          Down
         </motion.button>
+
+        {/* UP */}
+        <motion.button
+          onClick={() => onFoldDirectionChange("up")}
+          className={cn(
+            " rounded-2xl transition-all duration-300 flex flex-col items-center gap-2 shadow-md text-base",
+            foldDirection === "up"
+              ? "bg-gray-900 text-white ring-2 ring-gray-500 shadow-lg"
+              : "bg-white text-gray-800 border border-gray-200 hover:bg-gray-100"
+          )}
+          whileHover={{ scale: 1.03 }}
+          whileTap={{ scale: 0.95 }}
+        >
+          <ChevronUp className="w-6 h-6" />
+          Up
+        </motion.button>
+
+        {/* LEFT */}
+        <motion.button
+          onClick={() => onFoldDirectionChange("left")}
+          className={cn(
+            " rounded-2xl transition-all duration-300 flex flex-col items-center gap-2 shadow-md text-base",
+            foldDirection === "left"
+              ? "bg-gray-900 text-white ring-2 ring-gray-500 shadow-lg"
+              : "bg-white text-gray-800 border border-gray-200 hover:bg-gray-100"
+          )}
+          whileHover={{ scale: 1.03 }}
+          whileTap={{ scale: 0.95 }}
+        >
+          <ChevronLeft className="w-6 h-6" />
+          Left
+        </motion.button>
+
+        {/* RIGHT */}
+        <motion.button
+          onClick={() => onFoldDirectionChange("right")}
+          className={cn(
+            " rounded-2xl transition-all duration-300 flex flex-col items-center gap-2 shadow-md text-base",
+            foldDirection === "right"
+              ? "bg-gray-900 text-white ring-2 ring-gray-500 shadow-lg"
+              : "bg-white text-gray-800 border border-gray-200 hover:bg-gray-100"
+          )}
+          whileHover={{ scale: 1.03 }}
+          whileTap={{ scale: 0.95 }}
+        >
+          <ChevronRight className="w-6 h-6" />
+          Right
+        </motion.button>
+
       </div>
     </motion.div>
   );

@@ -391,56 +391,84 @@ export default function CapturePage() {
         <div className="absolute -inset-8 border border-gray-400/20 rounded-4xl pointer-events-none"></div>
       </div>
 
-      {/* Enhanced Action Buttons */}
-      <div className="flex flex-col sm:flex-row gap-6 mt-8 relative z-10">
-        {!photo ? (
-          <>
-            <Button
-              onClick={capturePhoto}
-              disabled={isCapturing || !cameraLoaded}
-              className="min-w-[200px] py-5 text-lg shadow-2xl shadow-gray-500/25"
-            >
-              <CameraIcon />
-              {isCapturing ? "Capturing..." : cameraLoaded ? "Capture Photo" : "Loading Camera..."}
-            </Button>
-            <Button
-              onClick={() => setFacingMode((prev) => (prev === "user" ? "environment" : "user"))}
-              variant="secondary"
-              className="min-w-[200px] py-5 text-lg"
-              disabled={isCapturing}
-            >
-              <FlipIcon />
-              Flip Camera
-            </Button>
-          </>
-        ) : (
-          <>
-            <Button
-              onClick={handleRetake}
-              variant="secondary"
-              className="min-w-[200px] py-5 text-lg"
-            >
-              <RetakeIcon />
-              Retake Photo
-            </Button>
-            <Button
-              onClick={handleContinue}
-              className="min-w-[200px] py-5 text-lg shadow-2xl shadow-gray-500/25"
-            >
-              Continue
-              <ContinueIcon />
-            </Button>
-          </>
-        )}
-      </div>
+  {/* --- DIV 1 : Capture + Flip Camera Buttons --- */}
+{!photo && (
+  <div className="flex items-center justify-center ml-30 gap-15 mt-8 relative z-10">
+    {/* Red Circular Capture Button */}
+    <button
+      onClick={capturePhoto}
+      disabled={isCapturing || !cameraLoaded}
+      className="w-20 h-20 rounded-full bg-red-600 border-4 border-white shadow-2xl hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all hover:scale-105 active:scale-95"
+      aria-label="Capture Photo"
+    />
+
+    {/* Flip Camera Button */}
+    <button
+      onClick={() =>
+        setFacingMode((prev) => (prev === 'user' ? 'environment' : 'user'))
+      }
+      disabled={isCapturing}
+      className="w-12 h-12 rounded-full bg-white shadow-lg hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition-all hover:scale-105 active:scale-95 flex items-center justify-center"
+      aria-label="Flip Camera"
+    >
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        fill="none"
+        viewBox="0 0 24 24"
+        strokeWidth={2}
+        stroke="currentColor"
+        className="w-6 h-6 text-gray-700"
+      >
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99"
+        />
+      </svg>
+    </button>
+  </div>
+)}
+
+{/* --- DIV 2 : Retake (Back) + Continue Buttons --- */}
+{photo && (
+  <div className="flex items-center justify-center gap-10 mt-8 relative z-10">
+    
+    {/* Back / Retake Button */}
+    <button
+      onClick={handleRetake}
+      className="w-16 h-16 rounded-2xl bg-white flex items-center justify-center shadow-xl hover:shadow-2xl transition-all active:scale-95"
+    >
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        fill="none"
+        viewBox="0 0 24 24"
+        strokeWidth={2}
+        stroke="currentColor"
+        className="w-6 h-6 text-gray-800"
+      >
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          d="M15 19l-7-7 7-7"
+        />
+      </svg>
+    </button>
+
+    {/* Continue Button */}
+    <button
+      onClick={handleContinue}
+      className="min-w-[200px] px-8 py-5 bg-white rounded-2xl shadow-2xl shadow-gray-500/25 flex items-center justify-center gap-2 text-lg font-medium text-black transition-all hover:shadow-gray-500/40 active:scale-95"
+    >
+      Continue
+    </button>
+  </div>
+)}
+
 
       {/* Enhanced Status Indicator */}
       <div className="mt-8 flex items-center gap-3 px-6 py-4 relative z-10">
-        <div className={`w-3 h-3 rounded-full ${!photo ? (cameraLoaded ? 'bg-green-400' : 'bg-yellow-400') : 'bg-gray-600'
-          }`} />
-        <span className="text-gray-700 font-medium">
-          {!photo ? (cameraLoaded ? 'Camera Ready' : 'Camera Loading...') : 'Photo Captured'}
-        </span>
+        
+       
       </div>
 
       <canvas ref={canvasRef} className="hidden" />
